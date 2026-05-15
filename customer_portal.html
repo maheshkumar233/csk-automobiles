@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSK Automobiles — Customer Portal</title>
+<link rel="icon" href="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="app-loader">
+  <div class="logo-big">CSK<span style="color:#93C5FD">automobiles</span></div>
+  <div class="logo-sub">Tambaram · Chennai</div>
+  <div class="spinner"></div>
+</div>
+
+<div id="topbar" class="hidden">
+  <div class="topbar-logo">CSK<span>automobiles</span></div>
+  <div class="topbar-location">Tambaram, Chennai</div>
+  <div class="topbar-right">
+    <div class="topbar-user">
+      <div class="topbar-avatar" id="topbar-avatar">U</div>
+      <span id="topbar-name" style="font-size:13px;"></span>
+      <span id="topbar-badge"></span>
+    </div>
+    <button class="btn-icon" onclick="toggleDark()" title="Toggle Dark Mode">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <button class="btn-icon" onclick="handleLogout()" title="Logout">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="customer-page" class="page active">
+  <div style="background:linear-gradient(135deg,#1E40AF,#2563EB);color:#fff;padding:24px 28px;">
+    <div style="max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div id="cust-portal-name" style="font-family:Syne,sans-serif;font-size:24px;font-weight:700;"></div>
+        <div id="cust-portal-vehicle" style="font-size:13px;opacity:0.7;margin-top:4px;"></div>
+      </div>
+      <div id="cust-portal-uid" style="background:rgba(255,255,255,0.15);border-radius:20px;padding:6px 18px;font-size:13px;font-weight:600;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.2);"></div>
+    </div>
+  </div>
+  <div style="max-width:900px;margin:24px auto;padding:0 16px;">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="custTab('services',this)">My Services</button>
+      <button class="tab-btn" onclick="custTab('ongoing',this)">Ongoing</button>
+      <button class="tab-btn" onclick="custTab('reminders',this)">🔔 Reminders</button>
+      <button class="tab-btn" onclick="custTab('request',this)">➕ Request Service</button>
+    </div>
+    <div id="cust-services" class="tab-panel active">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h4 style="font-family:Syne,sans-serif;">Service History</h4>
+        <button class="btn btn-secondary btn-sm" onclick="clearServiceHistory()" id="clear-history-btn" style="display:none;">🗑️ Clear</button>
+      </div>
+      <div id="cust-services-list"></div>
+    </div>
+    <div id="cust-ongoing" class="tab-panel">
+      <div id="cust-ongoing-list"></div>
+    </div>
+    <div id="cust-reminders" class="tab-panel">
+      <div id="cust-reminders-list"></div>
+    </div>
+    <div id="cust-request" class="tab-panel">
+      <div class="card">
+        <h3 style="font-family:Syne,sans-serif;margin-bottom:16px;">Request a Service</h3>
+        <p class="text-sm text-muted mb-16">Submit a service request and our team will get back to you.</p>
+        <div class="form-group">
+          <label>Type of Service Needed</label>
+          <select class="form-control" id="req-work">
+            <option value="">Select service type</option>
+            <option>Oil Change</option><option>Brake Service</option><option>Tire Rotation</option>
+            <option>Battery Replacement</option><option>Engine Check</option><option>Full Service</option>
+            <option>AC Service</option><option>Wheel Alignment</option><option>Clutch Repair</option>
+            <option>Gear Box Repair</option><option>Electrical Work</option><option>Painting</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Preferred Date</label>
+          <input type="date" class="form-control" id="req-date">
+        </div>
+        <div class="form-group">
+          <label>Description / Notes</label>
+          <textarea class="form-control" id="req-notes" rows="3" placeholder="Describe the issue or service you need..."></textarea>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="submitServiceRequest()" id="req-submit-btn">Submit Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Bottom Nav -->
+<div class="mob-nav">
+  <button class="active" onclick="custTab('services',document.querySelectorAll('.tab-btn')[0]); mobActive(this)"><span class="mob-icon">🚗</span>Services</button>
+  <button onclick="custTab('ongoing',document.querySelectorAll('.tab-btn')[1]); mobActive(this)"><span class="mob-icon">⚙️</span>Ongoing</button>
+  <button onclick="custTab('request',document.querySelectorAll('.tab-btn')[3]); mobActive(this)"><span class="mob-icon">➕</span>Request</button>
+  <button onclick="custTab('reminders',document.querySelectorAll('.tab-btn')[2]); mobActive(this)"><span class="mob-icon">🔔</span>Alerts</button>
+  <button onclick="handleLogout()"><span class="mob-icon">🚪</span>Logout</button>
+</div>
+
+<script src="shared.js"></script>
+<script>
+let clearedIds = [];
+
+window.onload = async function() {
+  restoreDark();
+  const userData = JSON.parse(localStorage.getItem('csk_user') || 'null');
+  if (!userData || userData.role !== 'customer') { window.location.href = 'index.html'; return; }
+  currentUser = userData;
+
+  // Security check: verify user is still active in DB
+  try {
+    const liveDoc = await db.collection('customers').doc(currentUser.id).get();
+    if (!liveDoc.exists || liveDoc.data().status === 'Removed' || liveDoc.data().status === 'Rejected') {
+      toast('Your account has been deactivated.', 'error');
+      setTimeout(() => { localStorage.clear(); window.location.href = 'index.html'; }, 1500);
+      return;
+    }
+  } catch(e) { console.error(e); }
+
+  setTopbar(currentUser.data.name, currentUser.id, 'customer');
+  loadCustomerPortal(currentUser.data);
+  setTimeout(() => hideLoader(), 500);
+};
+
+function mobActive(el) {
+  document.querySelectorAll('.mob-nav button').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function custTab(tab, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('cust-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+async function loadCustomerPortal(c) {
+  document.getElementById('cust-portal-name').textContent = c.name;
+  document.getElementById('cust-portal-vehicle').textContent = `${c.vehicleMake} ${c.vehicleModel} (${c.vehicleYear}) • Reg: ${c.vehicleReg}`;
+  document.getElementById('cust-portal-uid').textContent = c.userId || '—';
+
+  try {
+    // Get cleared service IDs
+    const custDoc = await db.collection('customers').doc(currentUser.id).get();
+    clearedIds = custDoc.data().clearedServices || [];
+
+    const snap = await db.collection('services').where('customerId', '==', currentUser.id).get();
+    const allSvcs = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    allSvcs.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    // Visible services (not cleared)
+    const svcs = allSvcs.filter(s => !clearedIds.includes(s.id));
+    const completedSvcs = svcs.filter(s => s.status === 'Completed');
+
+    // Services tab
+    const sEl = document.getElementById('cust-services-list');
+    if (completedSvcs.length === 0) {
+      sEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🚗</div><div class="empty-text">No service history found</div></div>';
+      document.getElementById('clear-history-btn').style.display = 'none';
+    } else {
+      document.getElementById('clear-history-btn').style.display = 'inline-flex';
+      sEl.innerHTML = completedSvcs.map(s => `
+        <div class="card card-sm mb-16" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:700;">${s.workType}</div>
+            <div class="text-sm text-muted">Service on ${fmtDate(s.date)} • ₹${s.cost || 0}</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+              <span class="badge badge-blue">👷 ${s.workerName || 'Workshop'}</span>
+              ${s.workerPhone ? `<a href="tel:${s.workerPhone}" class="btn btn-sm" style="background:var(--green);color:#fff;padding:4px 12px;font-size:12px;">📞 Call</a>` : ''}
+            </div>
+            ${s.notes ? `<div class="text-sm text-muted mt-8">Note: ${s.notes}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            ${statusBadge(s.status)}
+            <button class="btn btn-secondary btn-sm" onclick="hideService('${s.id}')" style="font-size:11px;padding:3px 8px;">✕ Hide</button>
+          </div>
+        </div>`).join('');
+    }
+
+    // Ongoing
+    const ongoing = allSvcs.filter(s => s.status === 'Pending' || s.status === 'In Progress');
+    const oEl = document.getElementById('cust-ongoing-list');
+    if (ongoing.length === 0) { oEl.innerHTML = '<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">No ongoing service requests</div></div>'; }
+    else {
+      oEl.innerHTML = ongoing.map(s => `
+        <div class="card card-sm mb-16" style="border-left:4px solid ${s.status === 'In Progress' ? 'var(--blue)' : 'var(--gold)'};">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+            <div style="flex:1;min-width:200px;">
+              <div style="font-weight:700;">${s.workType}</div>
+              <div class="text-sm text-muted">Service on ${fmtDate(s.date)} • ₹${s.cost || 0}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <span class="badge badge-blue">👷 ${s.workerName || 'Workshop'}</span>
+                ${s.workerPhone ? `<a href="tel:${s.workerPhone}" class="btn btn-sm" style="background:var(--green);color:#fff;padding:4px 12px;font-size:12px;">📞 Call Employee</a>` : ''}
+              </div>
+              ${s.notes ? `<div class="text-sm text-muted mt-8">${s.notes}</div>` : ''}
+            </div>
+            ${statusBadge(s.status)}
+          </div>
+        </div>`).join('');
+    }
+
+    // Reminders (only due within 30 days or overdue)
+    const rEl = document.getElementById('cust-reminders-list');
+    const autoReminders = computeReminders(allSvcs.filter(s => s.status === 'Completed'), false);
+    let adminReminders = custDoc.data().reminders || [];
+    adminReminders.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    if (autoReminders.length === 0 && adminReminders.length === 0) {
+      rEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🔔</div><div class="empty-text">No active reminders</div></div>';
+    } else {
+      let html = '';
+      if (adminReminders.length > 0) {
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h4 style="color:var(--primary); font-family:Syne,sans-serif;">Workshop Messages</h4><button class="btn btn-secondary btn-sm" onclick="clearAdminReminders()">🗑️ Clear All</button></div>`;
+        html += adminReminders.map(r => `
+          <div class="card card-sm mb-16" style="border-left:4px solid var(--primary); background:var(--accent-light);">
+            <div style="font-weight:700; display:flex; justify-content:space-between;">
+              <span>${r.workType} Reminder</span>
+              <span class="text-sm text-muted">${fmtDate(r.date)}</span>
+            </div>
+            <div class="text-sm mt-8">${r.message}</div>
+          </div>`).join('');
+      }
+      if (autoReminders.length > 0) {
+        if (adminReminders.length > 0) html += `<h4 style="margin-top:24px; margin-bottom:12px; color:var(--text); font-family:Syne,sans-serif;">Upcoming Services</h4>`;
+        html += autoReminders.map(r => `
+          <div class="card card-sm mb-16" style="display:flex;align-items:center;justify-content:space-between;border-left:4px solid ${r.overdue ? 'var(--red)' : 'var(--gold)'};">
+            <div>
+              <div style="font-weight:700;">${r.service}</div>
+              <div class="text-sm text-muted">Due: ${fmtDate(r.due)}</div>
+            </div>
+            ${r.overdue ? '<span class="badge badge-red">OVERDUE</span>' : '<span class="badge badge-gold">Due Soon</span>'}
+          </div>`).join('');
+      }
+      rEl.innerHTML = html;
+    }
+  } catch (e) { console.error('Error loading customer portal:', e); }
+}
+
+async function hideService(serviceId) {
+  clearedIds.push(serviceId);
+  try {
+    await db.collection('customers').doc(currentUser.id).update({ clearedServices: clearedIds });
+    toast('Service hidden from your view', 'success');
+    loadCustomerPortal(currentUser.data);
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function clearServiceHistory() {
+  if (!confirm('Are you sure you want to clear your service history from view? (Admin will still have access)')) return;
+  try {
+    const snap = await db.collection('services').where('customerId', '==', currentUser.id).get();
+    const allIds = snap.docs.filter(d => d.data().status === 'Completed').map(d => d.id);
+    clearedIds = [...new Set([...clearedIds, ...allIds])];
+    await db.collection('customers').doc(currentUser.id).update({ clearedServices: clearedIds });
+    toast('Service history cleared', 'success');
+    loadCustomerPortal(currentUser.data);
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function clearAdminReminders() {
+  if (!confirm('Clear all workshop messages?')) return;
+  try {
+    await db.collection('customers').doc(currentUser.id).update({ reminders: [] });
+    toast('Reminders cleared', 'success');
+    loadCustomerPortal(currentUser.data);
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function submitServiceRequest() {
+  const work = getVal('req-work');
+  const date = getVal('req-date');
+  const notes = getVal('req-notes');
+  if (!work) { toast('Please select a service type', 'error'); return; }
+  if (!date) { toast('Please select a preferred date', 'error'); return; }
+
+  const btn = document.getElementById('req-submit-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  try {
+    const c = currentUser.data;
+    await db.collection('services').add({
+      customerId: currentUser.id,
+      userId: c.userId || '',
+      customerName: c.name,
+      customerPhone: c.phone,
+      vehicleMake: c.vehicleMake || '',
+      vehicleModel: c.vehicleModel || '',
+      vehicleYear: c.vehicleYear || '',
+      vehicleType: c.vehicleType || '',
+      vehicleReg: c.vehicleReg || '',
+      workType: work,
+      date: date,
+      time: '',
+      cost: 0,
+      status: 'Pending',
+      notes: notes ? 'Customer Request: ' + notes : 'Customer-initiated service request',
+      workerId: '',
+      workerName: '',
+      workerPhone: '',
+      requestedByCustomer: true,
+      createdAt: new Date().toISOString()
+    });
+    toast('Service request submitted! Our team will assign a worker.', 'success');
+    document.getElementById('req-work').value = '';
+    document.getElementById('req-date').value = '';
+    document.getElementById('req-notes').value = '';
+    loadCustomerPortal(currentUser.data);
+    // Switch to ongoing tab
+    custTab('ongoing', document.querySelectorAll('.tab-btn')[1]);
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+  btn.disabled = false; btn.textContent = 'Submit Request';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSK Automobiles — Admin Portal</title>
+<link rel="icon" href="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="app-loader">
+  <div class="logo-big">CSK<span style="color:#93C5FD">automobiles</span></div>
+  <div class="logo-sub">Tambaram · Chennai</div>
+  <div class="spinner"></div>
+</div>
+
+<div id="topbar" class="hidden">
+  <div class="topbar-logo">CSK<span>automobiles</span></div>
+  <div class="topbar-location">Tambaram, Chennai</div>
+  <div class="topbar-right">
+    <div class="topbar-user">
+      <div class="topbar-avatar" id="topbar-avatar">U</div>
+      <span id="topbar-name" style="font-size:13px;"></span>
+      <span id="topbar-badge"></span>
+    </div>
+    <button class="btn-icon" onclick="toggleDark()" title="Toggle Dark Mode">
+      <svg id="dark-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <button class="btn-icon" onclick="handleLogout()" title="Logout">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="admin-page" class="page active">
+  <div class="portal-layout">
+    <nav class="sidebar" id="admin-sidebar">
+      <button class="sidebar-item active" data-tab="dashboard" onclick="adminTab('dashboard',this)"><span class="sidebar-icon">📊</span> Dashboard</button>
+      <button class="sidebar-item" data-tab="cust-approvals" onclick="adminTab('cust-approvals',this)"><span class="sidebar-icon">✅</span> Customer Approvals <span id="ca-badge" class="badge badge-red" style="margin-left:auto;"></span></button>
+      <button class="sidebar-item" data-tab="cust-directory" onclick="adminTab('cust-directory',this)"><span class="sidebar-icon">👥</span> Customer Directory</button>
+      <button class="sidebar-item" data-tab="worker-approvals" onclick="adminTab('worker-approvals',this)"><span class="sidebar-icon">🔧</span> Worker Approvals <span id="wa-badge" class="badge badge-red" style="margin-left:auto;"></span></button>
+      <button class="sidebar-item" data-tab="worker-directory" onclick="adminTab('worker-directory',this)"><span class="sidebar-icon">👷</span> Worker Directory</button>
+      <button class="sidebar-item" data-tab="unreg-services" onclick="adminTab('unreg-services',this)"><span class="sidebar-icon">📋</span> Service Requests</button>
+      <button class="sidebar-item" data-tab="all-services" onclick="adminTab('all-services',this)"><span class="sidebar-icon">🚗</span> All Services</button>
+    </nav>
+    <div class="main-content">
+      <!-- Dashboard -->
+      <div id="admin-dashboard" class="admin-panel">
+        <div class="section-header"><div><div class="section-title">Dashboard</div><div class="section-sub">CSK Automobiles — Tambaram, Chennai</div></div></div>
+        <div class="grid-4" id="kpi-grid">
+          <div class="kpi-card"><span class="kpi-icon">👥</span><div class="kpi-num" id="kpi-customers">0</div><div class="kpi-label">Total Customers</div></div>
+          <div class="kpi-card"><span class="kpi-icon">⏳</span><div class="kpi-num" id="kpi-pending">0</div><div class="kpi-label">Pending Approvals</div></div>
+          <div class="kpi-card"><span class="kpi-icon">🔧</span><div class="kpi-num" id="kpi-active">0</div><div class="kpi-label">Active Services</div></div>
+          <div class="kpi-card"><span class="kpi-icon">🔔</span><div class="kpi-num" id="kpi-reminders">0</div><div class="kpi-label">Due Reminders</div></div>
+        </div>
+        <div class="grid-2 mt-24">
+          <div class="card">
+            <h3 style="font-family:Syne,sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;">Recent Services</h3>
+            <div id="dash-recent-services"></div>
+          </div>
+          <div class="card">
+            <h3 style="font-family:Syne,sans-serif;font-size:16px;font-weight:700;margin-bottom:16px;">Pending Approvals</h3>
+            <div id="dash-pending"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Approvals -->
+      <div id="admin-cust-approvals" class="admin-panel hidden">
+        <div class="section-header"><div class="section-title">Customer Approvals</div></div>
+        <div id="cust-approvals-list"></div>
+      </div>
+
+      <!-- Customer Directory -->
+      <div id="admin-cust-directory" class="admin-panel hidden">
+        <div class="section-header">
+          <div class="section-title">Customer Directory</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="search-bar" style="width:240px;">
+              <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="cust-search" placeholder="Search name or ID..." oninput="renderCustomerDirectory()">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openAdminAddCustomer()">+ Add Customer</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table id="cust-dir-table">
+          <thead><tr><th>User ID</th><th>Name</th><th>Vehicle</th><th>Mobile</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="cust-dir-body"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Worker Approvals -->
+      <div id="admin-worker-approvals" class="admin-panel hidden">
+        <div class="section-header"><div class="section-title">Worker Approvals</div></div>
+        <div id="worker-approvals-list"></div>
+      </div>
+
+      <!-- Worker Directory -->
+      <div id="admin-worker-directory" class="admin-panel hidden">
+        <div class="section-header">
+          <div class="section-title">Worker Directory</div>
+          <button class="btn btn-primary btn-sm" onclick="openAdminAddWorker()">+ Add Worker</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Name</th><th>Age</th><th>DOB</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="worker-dir-body"></tbody>
+        </table></div>
+      </div>
+
+      <!-- Service Requests (Walk-in + Customer Requests) -->
+      <div id="admin-unreg-services" class="admin-panel hidden">
+        <div class="section-header"><div class="section-title">Service Requests</div></div>
+        <div id="service-requests-container"></div>
+      </div>
+
+      <!-- All Services -->
+      <div id="admin-all-services" class="admin-panel hidden">
+        <div class="section-header">
+          <div class="section-title">All Service Entries</div>
+          <div class="search-bar" style="width:260px;">
+            <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="svc-search" placeholder="Search service type..." oninput="renderAllServices()">
+          </div>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Customer</th><th>User ID</th><th>Vehicle</th><th>Service</th><th>Since</th><th>Worker</th><th>Cost</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="all-services-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Bottom Nav -->
+<div class="mob-nav">
+  <button class="active" onclick="adminTab('dashboard',document.querySelectorAll('#admin-sidebar .sidebar-item')[0]); mobActive(this)"><span class="mob-icon">📊</span>Home</button>
+  <button onclick="adminTab('cust-approvals',document.querySelectorAll('#admin-sidebar .sidebar-item')[1]); mobActive(this)"><span class="mob-icon">✅</span>Approvals</button>
+  <button onclick="adminTab('cust-directory',document.querySelectorAll('#admin-sidebar .sidebar-item')[2]); mobActive(this)"><span class="mob-icon">👥</span>Customers</button>
+  <button onclick="adminTab('all-services',document.querySelectorAll('#admin-sidebar .sidebar-item')[6]); mobActive(this)"><span class="mob-icon">🚗</span>Services</button>
+  <button onclick="handleLogout()"><span class="mob-icon">🚪</span>Logout</button>
+</div>
+
+<!-- MODALS -->
+<!-- ADMIN ADD WORKER MODAL -->
+<div id="admin-add-worker-modal" class="modal-bg hidden">
+  <div class="modal-card">
+    <div class="modal-title"><span>Add Worker</span><button class="modal-close" onclick="document.getElementById('admin-add-worker-modal').classList.add('hidden')">✕</button></div>
+    <div class="form-group"><label>Full Name</label><input type="text" class="form-control" id="aw-name" placeholder="Full name"></div>
+    <div class="form-row"><div class="form-group"><label>Age</label><input type="number" class="form-control" id="aw-age" placeholder="Age"></div><div class="form-group"><label>DOB</label><input type="date" class="form-control" id="aw-dob"></div></div>
+    <div class="form-row"><div class="form-group"><label>Phone</label><input type="tel" class="form-control" id="aw-phone" placeholder="10-digit" maxlength="10"></div><div class="form-group"><label>Password</label><input type="password" class="form-control" id="aw-pass" placeholder="Min 8 chars + num"></div></div>
+    <button class="btn btn-primary btn-full" onclick="adminAddWorker()">Add Worker (Approved)</button>
+  </div>
+</div>
+
+<!-- ADMIN ADD CUSTOMER MODAL -->
+<div id="admin-add-cust-modal" class="modal-bg hidden">
+  <div class="modal-card">
+    <div class="modal-title"><span>Add Customer</span><button class="modal-close" onclick="document.getElementById('admin-add-cust-modal').classList.add('hidden')">✕</button></div>
+    <div class="form-row"><div class="form-group"><label>Full Name</label><input type="text" class="form-control" id="ac-name" placeholder="Full name"></div><div class="form-group"><label>Phone</label><input type="tel" class="form-control" id="ac-phone" placeholder="10-digit" maxlength="10"></div></div>
+    <div class="form-group"><label>Email</label><input type="email" class="form-control" id="ac-email" placeholder="email@example.com"></div>
+    <div class="form-row"><div class="form-group"><label>Vehicle Type</label><select class="form-control" id="ac-vtype"><option value="">Select</option><option>Car</option><option>Bike</option><option>SUV</option><option>Truck</option></select></div><div class="form-group"><label>Make</label><select class="form-control" id="ac-vmake"><option value="">Select</option><option>Maruti Suzuki</option><option>Hyundai</option><option>Honda</option><option>Toyota</option><option>Tata</option><option>Mahindra</option><option>Kia</option><option>Volkswagen</option><option>Bajaj</option><option>TVS</option><option>Hero</option><option>Royal Enfield</option><option>Yamaha</option><option>Suzuki</option><option>Other</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label>Model</label><input type="text" class="form-control" id="ac-vmodel" placeholder="e.g. Swift"></div><div class="form-group"><label>Year</label><input type="number" class="form-control" id="ac-vyear" placeholder="2024" min="1990"></div></div>
+    <div class="form-row"><div class="form-group"><label>Reg No.</label><input type="text" class="form-control" id="ac-vreg" placeholder="TN 22 AB 1234" style="text-transform:uppercase;"></div><div class="form-group"><label>Password</label><input type="password" class="form-control" id="ac-pass" placeholder="Min 8 chars + num"></div></div>
+    <button class="btn btn-primary btn-full" onclick="adminAddCustomer()">Add Customer (Approved)</button>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+window.onload = function() {
+  restoreDark();
+  const userData = JSON.parse(localStorage.getItem('csk_user') || 'null');
+  if (!userData || userData.role !== 'admin') {
+    window.location.href = 'index.html';
+    return;
+  }
+  setTopbar('Admin', 'Admin', 'admin');
+  populateYearDropdowns(['ac-vyear']);
+  loadAdminData();
+  setTimeout(() => hideLoader(), 500);
+};
+
+function adminTab(tab, el) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('admin-' + tab).classList.remove('hidden');
+  document.querySelectorAll('#admin-sidebar .sidebar-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function loadAdminData() {
+  try {
+    const custSnap = await db.collection('customers').get();
+    const workSnap = await db.collection('workers').get();
+    const svcSnap = await db.collection('services').get();
+    
+    let cp=0, wp=0, activeSvc=0, remDue=0;
+    custSnap.docs.forEach(d => { if(d.data().status === 'Pending') cp++; });
+    workSnap.docs.forEach(d => { if(d.data().status === 'Pending') wp++; });
+    const svcs = svcSnap.docs.map(d => ({id:d.id, ...d.data()}));
+    svcs.sort((a,b) => new Date(b.date) - new Date(a.date));
+    svcs.forEach(s => { if(s.status==='Pending'||s.status==='In Progress') activeSvc++; });
+    
+    document.getElementById('ca-badge').textContent = cp>0?cp:''; document.getElementById('ca-badge').style.display = cp>0?'inline-flex':'none';
+    document.getElementById('wa-badge').textContent = wp>0?wp:''; document.getElementById('wa-badge').style.display = wp>0?'inline-flex':'none';
+    
+    document.getElementById('kpi-customers').textContent = custSnap.docs.filter(d=>d.data().status==='Approved').length;
+    document.getElementById('kpi-pending').textContent = cp + wp;
+    document.getElementById('kpi-active').textContent = activeSvc;
+    
+    renderCustApprovals(custSnap.docs.filter(d=>d.data().status==='Pending').map(d=>({id:d.id, ...d.data()})));
+    renderWorkerApprovals(workSnap.docs.filter(d=>d.data().status==='Pending').map(d=>({id:d.id, ...d.data()})));
+    
+    // Recent Services
+    document.getElementById('dash-recent-services').innerHTML = svcs.slice(0,5).map(s => `
+      <div class="info-row">
+        <div><div style="font-weight:600">${s.workType}</div><div class="text-sm text-muted">${s.customerName||'Walk-in'} • ${fmtDate(s.date)}</div></div>
+        <div style="text-align:right">${statusBadge(s.status)}</div>
+      </div>
+    `).join('');
+    
+    // Reminders
+    const customers = custSnap.docs.map(d=>d.data());
+    const regSvcs = svcs.filter(s=>s.customerId);
+    const remindersList = computeReminders(regSvcs, true);
+    remDue = remindersList.filter(r=>r.daysUntil<=30).length;
+    document.getElementById('kpi-reminders').textContent = remDue;
+    
+    renderCustomerDirectory();
+    renderWorkerDirectory();
+    renderServiceRequests(svcs);
+    renderAllServices();
+  } catch (e) { toast('Error loading admin data: ' + e.message, 'error'); console.error(e); }
+}
+
+function renderCustApprovals(pending) {
+  const el = document.getElementById('cust-approvals-list');
+  if(pending.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No pending customer approvals</div></div>';return;}
+  el.innerHTML = pending.map(c => `
+    <div class="card card-sm mb-16" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-weight:700;font-size:15px;">${c.name}</div>
+        <div class="text-sm text-muted">${c.phone} • ${c.email||''}</div>
+        <div class="text-sm" style="margin-top:4px;">${c.vehicleType} • ${c.vehicleMake} ${c.vehicleModel} (${c.vehicleYear}) • ${c.vehicleReg}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-success btn-sm" onclick="approveCustomer('${c.id}')">Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmAction('Reject this customer?', () => updateStatus('customers','${c.id}','Rejected'))">Reject</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderWorkerApprovals(pending) {
+  const el = document.getElementById('worker-approvals-list');
+  if(pending.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No pending worker approvals</div></div>';return;}
+  el.innerHTML = pending.map(w => `
+    <div class="card card-sm mb-16" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-weight:700;font-size:15px;">${w.name}</div>
+        <div class="text-sm text-muted">Phone: ${w.phone} • Age: ${w.age}</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-success btn-sm" onclick="updateStatus('workers','${w.id}','Approved')">Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmAction('Reject this worker?', () => updateStatus('workers','${w.id}','Rejected'))">Reject</button>
+      </div>
+    </div>`).join('');
+}
+
+async function approveCustomer(id) {
+  try {
+    const uid = generateUserID();
+    await db.collection('customers').doc(id).update({status:'Approved', userId:uid});
+    toast('Customer approved! ID: '+uid, 'success');
+    
+    // Welcome Email via EmailJS
+    const doc = await db.collection('customers').doc(id).get();
+    const cdata = doc.data();
+    if(cdata.email) {
+      try {
+        await emailjs.send(EMAILJS_SERVICE, 'template_rxj7sbh', {
+          to_email: cdata.email,
+          to_name: cdata.name,
+          user_email: cdata.email,
+          user_name: cdata.name,
+          user_id: uid
+        });
+      } catch(emailErr) { console.error('Welcome email failed:', emailErr); }
+    }
+    loadAdminData();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function updateStatus(collection, id, status) {
+  try {
+    await db.collection(collection).doc(id).update({status:status});
+    toast('Status updated to ' + status, 'success');
+    loadAdminData();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function renderCustomerDirectory() {
+  const q = getVal('cust-search').toLowerCase();
+  const snap = await db.collection('customers').get();
+  const tbody = document.getElementById('cust-dir-body');
+  let count = 0;
+  tbody.innerHTML = snap.docs.map(d => {
+    const c = d.data();
+    if(c.status !== 'Approved' && c.status !== 'Removed') return '';
+    if(q && !c.name.toLowerCase().includes(q) && !(c.userId||'').toLowerCase().includes(q)) return '';
+    count++;
+    return `<tr>
+      <td style="font-weight:600;color:var(--primary)">${c.userId||'—'}</td>
+      <td>${c.name}</td>
+      <td>${c.vehicleMake} ${c.vehicleModel}</td>
+      <td>${c.phone}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td>${c.status === 'Approved' ? `<button class="btn btn-danger btn-sm" onclick="confirmAction('Remove customer ${c.name}? They will no longer be able to login.', () => updateStatus('customers','${d.id}','Removed'))">Remove</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  if(count===0) tbody.innerHTML='<tr><td colspan="6" class="empty-state">No customers found</td></tr>';
+}
+
+async function renderWorkerDirectory() {
+  const snap = await db.collection('workers').get();
+  const tbody = document.getElementById('worker-dir-body');
+  tbody.innerHTML = snap.docs.map(d => {
+    const w = d.data();
+    if(w.status !== 'Approved' && w.status !== 'Removed') return '';
+    return `<tr>
+      <td>${w.name}</td><td>${w.age}</td><td>${fmtDate(w.dob)}</td><td>${w.phone}</td>
+      <td>${statusBadge(w.status)}</td>
+      <td>${w.status === 'Approved' ? `<button class="btn btn-danger btn-sm" onclick="confirmAction('Remove worker ${w.name}? They will no longer be able to login.', () => updateStatus('workers','${d.id}','Removed'))">Remove</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderServiceRequests(svcs) {
+  const container = document.getElementById('service-requests-container');
+  // Customer-initiated requests (pending, need accept/reject)
+  const custRequests = svcs.filter(s => s.requestedByCustomer && (s.status === 'Pending' || s.status === 'Rejected'));
+  // Walk-in services (no customerId)
+  const walkins = svcs.filter(s => !s.customerId);
+
+  let html = '';
+
+  // Customer Requests Section
+  if (custRequests.length > 0) {
+    html += `<h4 style="font-family:Syne,sans-serif;margin-bottom:12px;color:var(--primary);">Customer Requests (Pending Approval)</h4>`;
+    html += custRequests.map(s => `
+      <div class="card card-sm mb-16" style="border-left:4px solid var(--gold);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:700;font-size:15px;">${s.customerName}</div>
+            <div class="text-sm text-muted">${s.customerPhone} • ${s.vehicleMake||''} ${s.vehicleModel||''} • ${s.vehicleReg||''}</div>
+            <div style="margin-top:6px;"><span class="badge badge-blue">${s.workType}</span> <span class="text-sm text-muted">for ${fmtDate(s.date)}</span></div>
+            ${s.notes ? `<div class="text-sm text-muted mt-8">${s.notes}</div>` : ''}
+            ${s.userId ? `<div class="text-sm" style="color:var(--primary);font-weight:600;margin-top:4px;">ID: ${s.userId}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            ${s.status === 'Pending' ? `
+              <button class="btn btn-success btn-sm" onclick="acceptServiceRequest('${s.id}')">✅ Accept</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectServiceRequest('${s.id}')">❌ Reject</button>
+            ` : `<span class="badge badge-red">Rejected</span>`}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Walk-in Services Section
+  if (walkins.length > 0) {
+    html += `<h4 style="font-family:Syne,sans-serif;margin:${custRequests.length > 0 ? '24px' : '0'} 0 12px;color:var(--text);">Walk-in Services</h4>`;
+    html += `<div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Vehicle</th><th>Service</th><th>Date</th><th>Worker</th><th>Cost</th></tr></thead>
+      <tbody>${walkins.map(s => `<tr>
+        <td>${s.customerName}</td><td>${s.customerPhone}</td>
+        <td>${s.vehicleMake||''} ${s.vehicleModel||''}</td>
+        <td>${s.workType}</td><td>${fmtDate(s.date)}</td>
+        <td>${s.workerName||'—'}</td><td>₹${s.cost||0}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+
+  if (!html) html = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No service requests</div></div>';
+  container.innerHTML = html;
+}
+
+async function renderAllServices() {
+  const q = getVal('svc-search').toLowerCase();
+  const snap = await db.collection('services').get();
+  const tbody = document.getElementById('all-services-body');
+  let docs = snap.docs.map(d => ({id:d.id, ...d.data()}));
+  docs.sort((a,b) => new Date(b.date) - new Date(a.date));
+  tbody.innerHTML = docs.filter(s => {
+    if(q && !s.workType.toLowerCase().includes(q) && !(s.customerName||'').toLowerCase().includes(q)) return false;
+    return true;
+  }).map(s => {
+    return `<tr>
+      <td>${fmtDate(s.date)}</td>
+      <td>${s.customerName||'Walk-in'}</td>
+      <td style="color:var(--primary);font-weight:600;">${s.userId||'—'}</td>
+      <td>${s.vehicleMake||''} ${s.vehicleModel||''} <span class="text-muted text-sm">${s.vehicleReg||''}</span></td>
+      <td>${s.workType}</td>
+      <td><span class="badge badge-gray">${monthsSince(s.date)}</span></td>
+      <td>${s.workerName}</td>
+      <td>₹${s.cost||0}</td>
+      <td>
+        <select class="form-control" style="padding:4px 8px;font-size:12px;width:110px;" onchange="adminUpdateSvcStatus('${s.id}', this.value)">
+          <option value="Pending" ${s.status==='Pending'?'selected':''}>Pending</option>
+          <option value="In Progress" ${s.status==='In Progress'?'selected':''}>In Progress</option>
+          <option value="Completed" ${s.status==='Completed'?'selected':''}>Completed</option>
+        </select>
+      </td>
+      <td>
+        ${s.customerId ? `<button class="btn btn-secondary btn-sm" onclick="sendServiceReminder('${s.id}')">🔔 Remind</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function adminUpdateSvcStatus(id, newStatus) {
+  try {
+    await db.collection('services').doc(id).update({status: newStatus});
+    toast('Service status updated', 'success');
+    loadAdminData();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function sendServiceReminder(serviceId) {
+  try {
+    const svcDoc = await db.collection('services').doc(serviceId).get();
+    const s = svcDoc.data();
+    if (!s.customerId) { toast('Walk-in customer — no portal to remind.', 'info'); return; }
+    
+    const custRef = db.collection('customers').doc(s.customerId);
+    const custDoc = await custRef.get();
+    if (!custDoc.exists) { toast('Customer record not found.', 'error'); return; }
+    const c = custDoc.data();
+    if (c.status === 'Removed' || c.status === 'Rejected') { toast(`Cannot remind ${c.name} — account is ${c.status}.`, 'error'); return; }
+    
+    let msgs = c.reminders || [];
+    msgs.push({
+      serviceId: serviceId,
+      workType: s.workType,
+      message: `Your ${s.workType} service is due for a checkup. Please schedule a visit!`,
+      date: new Date().toISOString()
+    });
+    
+    await custRef.update({ reminders: msgs });
+    toast(`Reminder pushed to ${s.customerName}'s portal!`, 'success');
+  } catch(e) { toast('Error sending reminder: ' + (e.text || e.message || JSON.stringify(e)), 'error'); console.error(e); }
+}
+
+// Admin Add Forms
+function openAdminAddWorker() { document.getElementById('admin-add-worker-modal').classList.remove('hidden'); }
+function openAdminAddCustomer() { document.getElementById('admin-add-cust-modal').classList.remove('hidden'); }
+
+async function adminAddWorker() {
+  const name = getVal('aw-name'), age = getVal('aw-age'), dob = getVal('aw-dob');
+  const phone = getVal('aw-phone'), pass = getVal('aw-pass');
+  if(!name || !age || !dob || !isPhone(phone) || !validPassword(pass)) { toast('Fill all fields properly (Min 8 chars pass)', 'error'); return; }
+  try {
+    await db.collection('workers').add({ name, age:Number(age), dob, phone, password:pass, status:'Approved', createdAt:new Date().toISOString() });
+    toast('Worker added successfully', 'success');
+    document.getElementById('admin-add-worker-modal').classList.add('hidden');
+    loadAdminData();
+  } catch(e) { toast('Error: '+e.message, 'error'); }
+}
+
+async function adminAddCustomer() {
+  const name = getVal('ac-name'), phone = getVal('ac-phone'), email = getVal('ac-email');
+  const vtype = getVal('ac-vtype'), vmake = getVal('ac-vmake'), vmodel = getVal('ac-vmodel');
+  const vyear = getVal('ac-vyear'), vreg = getVal('ac-vreg'), pass = getVal('ac-pass');
+  if(!name || !isPhone(phone) || !validPassword(pass)) { toast('Fill required fields properly (Min 8 chars pass)', 'error'); return; }
+  try {
+    const uid = generateUserID();
+    await db.collection('customers').add({
+      name, phone, email, vehicleType:vtype, vehicleMake:vmake, vehicleModel:vmodel,
+      vehicleYear:vyear, vehicleReg:vreg.toUpperCase(), password:pass,
+      status:'Approved', userId:uid, emailVerified:true, createdAt:new Date().toISOString()
+    });
+    toast('Customer added! ID: '+uid, 'success');
+    document.getElementById('admin-add-cust-modal').classList.add('hidden');
+    loadAdminData();
+  } catch(e) { toast('Error: '+e.message, 'error'); }
+}
+
+function mobActive(el) {
+  document.querySelectorAll('.mob-nav button').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+let _confirmCb = null;
+function confirmAction(message, callback) {
+  if (confirm(message)) callback();
+}
+
+async function acceptServiceRequest(serviceId) {
+  try {
+    await db.collection('services').doc(serviceId).update({ status: 'In Progress' });
+    toast('Service request accepted! It will now show in the customer\'s ongoing orders.', 'success');
+    loadAdminData();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function rejectServiceRequest(serviceId) {
+  if (!confirm('Reject this service request?')) return;
+  try {
+    await db.collection('services').doc(serviceId).update({ status: 'Rejected' });
+    toast('Service request rejected.', 'info');
+    loadAdminData();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+</script>
+</body>
+</html>

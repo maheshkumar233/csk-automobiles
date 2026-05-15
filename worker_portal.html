@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSK Automobiles — Worker Portal</title>
+<link rel="icon" href="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="app-loader">
+  <div class="logo-big">CSK<span style="color:#93C5FD">automobiles</span></div>
+  <div class="logo-sub">Tambaram · Chennai</div>
+  <div class="spinner"></div>
+</div>
+
+<div id="topbar" class="hidden">
+  <div class="topbar-logo">CSK<span>automobiles</span></div>
+  <div class="topbar-location">Tambaram, Chennai</div>
+  <div class="topbar-right">
+    <div class="topbar-user">
+      <div class="topbar-avatar" id="topbar-avatar">U</div>
+      <span id="topbar-name" style="font-size:13px;"></span>
+      <span id="topbar-badge"></span>
+    </div>
+    <button class="btn-icon" onclick="toggleDark()" title="Toggle Dark Mode">
+      <svg id="dark-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+    <button class="btn-icon" onclick="handleLogout()" title="Logout">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="worker-page" class="page active">
+  <div class="portal-layout">
+    <nav class="sidebar" id="worker-sidebar">
+      <button class="sidebar-item active" data-tab="new-service" onclick="workerTab('new-service',this)"><span class="sidebar-icon">➕</span> New Service Entry</button>
+      <button class="sidebar-item" data-tab="my-jobs" onclick="workerTab('my-jobs',this)"><span class="sidebar-icon">📋</span> My Jobs</button>
+    </nav>
+    <div class="main-content">
+      <!-- New Service -->
+      <div id="worker-new-service" class="worker-panel">
+        <div class="section-header"><div class="section-title">Log Service Entry</div></div>
+        <div class="card">
+          <div class="form-group">
+            <label>Customer User ID (optional — leave blank for walk-in)</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font-weight:700;font-size:15px;color:var(--primary);white-space:nowrap;">CU-</span>
+              <input type="text" class="form-control" id="sv-userid" placeholder="e.g. 482913" style="flex:1;">
+              <button class="btn btn-secondary" onclick="lookupCustomer()">Lookup</button>
+            </div>
+            <div id="sv-lookup-status" style="font-size:12px;margin-top:4px;"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Customer Name</label>
+              <input type="text" class="form-control" id="sv-cname" placeholder="Full name">
+              <div class="form-error" id="sv-cname-err">Name required</div>
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" class="form-control" id="sv-phone" placeholder="10-digit phone" maxlength="10">
+              <div class="form-error" id="sv-phone-err">Valid phone required</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Vehicle Manufacturer</label>
+              <select class="form-control" id="sv-vmake">
+                <option value="">Select make</option>
+                <option>Maruti Suzuki</option><option>Hyundai</option><option>Honda</option><option>Toyota</option>
+                <option>Tata</option><option>Mahindra</option><option>Kia</option><option>Volkswagen</option>
+                <option>Bajaj</option><option>TVS</option><option>Hero</option><option>Royal Enfield</option>
+                <option>Yamaha</option><option>Suzuki</option><option>Ford</option><option>Renault</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Year of Manufacture</label>
+              <select class="form-control" id="sv-vyear"></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Vehicle Model</label>
+              <input type="text" class="form-control" id="sv-vmodel" placeholder="e.g. City, Activa">
+            </div>
+            <div class="form-group">
+              <label>Vehicle Type</label>
+              <select class="form-control" id="sv-vtype">
+                <option value="">Select</option>
+                <option>Car</option><option>Bike</option><option>SUV</option><option>Truck</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Type of Work</label>
+              <select class="form-control" id="sv-work">
+                <option value="">Select work type</option>
+                <option>Oil Change</option><option>Brake Service</option><option>Tire Rotation</option>
+                <option>Battery Replacement</option><option>Engine Check</option><option>Full Service</option>
+                <option>AC Service</option><option>Wheel Alignment</option><option>Clutch Repair</option>
+                <option>Gear Box Repair</option><option>Electrical Work</option><option>Painting</option>
+                <option>Other</option>
+              </select>
+              <div class="form-error" id="sv-work-err">Work type required</div>
+            </div>
+            <div class="form-group">
+              <label>Estimated Cost (₹)</label>
+              <input type="number" class="form-control" id="sv-cost" placeholder="0" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" class="form-control" id="sv-date">
+            </div>
+            <div class="form-group">
+              <label>Time</label>
+              <input type="time" class="form-control" id="sv-time">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Status</label>
+              <select class="form-control" id="sv-status">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Vehicle Registration Number</label>
+              <input type="text" class="form-control" id="sv-vreg" placeholder="TN 22 AB 1234" style="text-transform:uppercase">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes (optional)</label>
+            <textarea class="form-control" id="sv-notes" rows="3" placeholder="Any additional notes..."></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="submitServiceEntry()">Save Service Entry</button>
+        </div>
+      </div>
+
+      <!-- My Jobs -->
+      <div id="worker-my-jobs" class="worker-panel hidden">
+        <div class="section-header"><div class="section-title">My Service Jobs</div></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Customer</th><th>Vehicle</th><th>Service</th><th>Cost</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="worker-jobs-body"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Bottom Nav -->
+<div class="mob-nav">
+  <button class="active" onclick="workerTab('new-service',document.querySelectorAll('#worker-sidebar .sidebar-item')[0]); mobActive(this)"><span class="mob-icon">➕</span>New</button>
+  <button onclick="workerTab('my-jobs',document.querySelectorAll('#worker-sidebar .sidebar-item')[1]); mobActive(this)"><span class="mob-icon">📋</span>My Jobs</button>
+  <button onclick="handleLogout()"><span class="mob-icon">🚪</span>Logout</button>
+</div>
+
+<script src="shared.js"></script>
+<script>
+function mobActive(el) {
+  document.querySelectorAll('.mob-nav button').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+window.onload = async function() {
+  restoreDark();
+  const userData = JSON.parse(localStorage.getItem('csk_user') || 'null');
+  if (!userData || userData.role !== 'worker') {
+    window.location.href = 'index.html';
+    return;
+  }
+  currentUser = userData;
+
+  // Security check: verify worker is still active
+  try {
+    const liveDoc = await db.collection('workers').doc(currentUser.id).get();
+    if (!liveDoc.exists || liveDoc.data().status === 'Removed' || liveDoc.data().status === 'Rejected') {
+      toast('Your account has been deactivated.', 'error');
+      setTimeout(() => { localStorage.clear(); window.location.href = 'index.html'; }, 1500);
+      return;
+    }
+  } catch(e) { console.error(e); }
+
+  setTopbar(currentUser.data.name, currentUser.id, 'worker');
+  populateYearDropdowns(['sv-vyear']);
+  document.getElementById('sv-date').value = today();
+  document.getElementById('sv-time').value = nowTime();
+  loadWorkerJobs();
+  setTimeout(() => hideLoader(), 500);
+};
+
+function workerTab(tab, el) {
+  document.querySelectorAll('.worker-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('worker-' + tab).classList.remove('hidden');
+  document.querySelectorAll('#worker-sidebar .sidebar-item').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function lookupCustomer() {
+  let uid = getVal('sv-userid');
+  if (!uid) { document.getElementById('sv-lookup-status').textContent = 'Enter a User ID first'; document.getElementById('sv-lookup-status').style.color = 'var(--red)'; return; }
+  if (!/^CU-/i.test(uid)) uid = 'CU-' + uid;
+  const statusEl = document.getElementById('sv-lookup-status');
+  try {
+    const snap = await db.collection('customers').where('userId', '==', uid).get();
+    if (snap.empty) { statusEl.textContent = '❌ Customer not found — will be saved as walk-in'; statusEl.style.color = 'var(--red)'; return; }
+    const c = snap.docs[0].data();
+    if (c.status !== 'Approved') { statusEl.textContent = '❌ Customer account is not active'; statusEl.style.color = 'var(--red)'; return; }
+    document.getElementById('sv-cname').value = c.name;
+    document.getElementById('sv-phone').value = c.phone;
+    document.getElementById('sv-vmake').value = c.vehicleMake;
+    document.getElementById('sv-vyear').value = c.vehicleYear;
+    document.getElementById('sv-vmodel').value = c.vehicleModel;
+    document.getElementById('sv-vtype').value = c.vehicleType;
+    document.getElementById('sv-vreg').value = c.vehicleReg;
+    document.getElementById('sv-userid').value = uid.replace('CU-', '');
+    statusEl.textContent = '✅ Customer found: ' + c.name;
+    statusEl.style.color = 'var(--green)';
+  } catch (e) { statusEl.textContent = 'Error: ' + e.message; statusEl.style.color = 'var(--red)'; }
+}
+
+async function submitServiceEntry() {
+  let uid = getVal('sv-userid');
+  if (uid && !/^CU-/i.test(uid)) uid = 'CU-' + uid;
+  const cname = getVal('sv-cname'), phone = getVal('sv-phone'), work = getVal('sv-work');
+  let ok = true;
+  if (!cname) { setErr('sv-cname-err', true); ok = false; } else clearErr('sv-cname-err');
+  if (phone && !isPhone(phone)) { setErr('sv-phone-err', true); ok = false; } else clearErr('sv-phone-err');
+  if (!work) { setErr('sv-work-err', true); ok = false; } else clearErr('sv-work-err');
+  if (!ok) return;
+
+  let custId = '';
+  if (uid) {
+    const snap = await db.collection('customers').where('userId', '==', uid).get();
+    if (!snap.empty) custId = snap.docs[0].id;
+  }
+
+  const entry = {
+    customerId: custId,
+    userId: uid || '',
+    customerName: cname,
+    customerPhone: phone,
+    vehicleMake: getVal('sv-vmake'),
+    vehicleModel: getVal('sv-vmodel'),
+    vehicleYear: getVal('sv-vyear'),
+    vehicleType: getVal('sv-vtype'),
+    vehicleReg: getVal('sv-vreg').toUpperCase(),
+    workType: work,
+    date: getVal('sv-date') || today(),
+    time: getVal('sv-time') || nowTime(),
+    cost: Number(getVal('sv-cost')) || 0,
+    status: getVal('sv-status') || 'Pending',
+    notes: getVal('sv-notes'),
+    workerId: currentUser.id,
+    workerName: currentUser.data.name,
+    workerPhone: currentUser.data.phone || '',
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    await db.collection('services').add(entry);
+    toast('Service entry saved!', 'success');
+    ['sv-userid','sv-cname','sv-phone','sv-vmodel','sv-vreg','sv-cost','sv-notes'].forEach(id => document.getElementById(id).value = '');
+    ['sv-vmake','sv-vyear','sv-vtype','sv-work'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('sv-status').value = 'Pending';
+    document.getElementById('sv-date').value = today();
+    document.getElementById('sv-time').value = nowTime();
+    document.getElementById('sv-lookup-status').textContent = '';
+    loadWorkerJobs();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function loadWorkerJobs() {
+  try {
+    const snap = await db.collection('services').where('workerId', '==', currentUser.id).get();
+    const tbody = document.getElementById('worker-jobs-body');
+    if (snap.empty) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No jobs yet</div></div></td></tr>`; return; }
+    let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    docs.sort((a,b) => new Date(b.date) - new Date(a.date));
+    tbody.innerHTML = docs.map(s => {
+      return `<tr>
+        <td>${fmtDate(s.date)}</td>
+        <td>${s.customerName || 'Walk-in'}</td>
+        <td>${s.vehicleMake || ''} ${s.vehicleModel || ''}</td>
+        <td>${s.workType}</td>
+        <td>₹${s.cost || 0}</td>
+        <td>${statusBadge(s.status)}</td>
+        <td>
+          <select class="form-control" style="padding:4px 8px;font-size:12px;width:120px;" onchange="workerUpdateStatus('${s.id}',this.value)">
+            <option value="Pending" ${s.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="In Progress" ${s.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+            <option value="Completed" ${s.status === 'Completed' ? 'selected' : ''}>Completed</option>
+          </select>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) { console.error('Error loading jobs:', e); }
+}
+
+async function workerUpdateStatus(serviceId, newStatus) {
+  try {
+    await db.collection('services').doc(serviceId).update({ status: newStatus });
+    toast('Status updated to ' + newStatus, 'success');
+    loadWorkerJobs();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+</script>
+</body>
+</html>

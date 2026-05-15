@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSK Automobiles - Premium Auto Service Since 1995</title>
+    <meta name="description" content="CSK Automobiles - Trusted auto care in Tambaram, Chennai since 1995. Expert car & bike service, repairs, and maintenance.">
+    <meta property="og:title" content="CSK Automobiles - Premium Auto Service">
+    <meta property="og:description" content="30+ years of trusted automotive service in Tambaram, Chennai.">
+    <meta property="og:image" content="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png">
+    <link rel="icon" href="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" type="image/png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563EB">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <link rel="stylesheet" href="shared.css">
+    <style>
+        /* Landing Page Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+        h1, h2, h3 { font-family: 'Syne', sans-serif; }
+        
+        /* Header */
+        .landing-header {
+            background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+            color: white; padding: 15px 0; position: fixed; width: 100%; top: 0; z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-section h1 { font-size: 28px; font-weight: 800; margin-bottom: 5px; letter-spacing: -1px; }
+        .logo-section p { font-size: 14px; opacity: 0.9; }
+        .header-login-btn {
+            background: white; color: #1565C0; padding: 12px 30px; border: none; border-radius: 8px;
+            font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .header-login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,255,255,0.3); }
+
+        /* Hero Section */
+        .hero-section { margin-top: 80px; background: linear-gradient(135deg, #E3F2FD 0%, #ffffff 100%); padding: 80px 20px; text-align: center; }
+        .hero-container { max-width: 1200px; margin: 0 auto; }
+        .hero-section h2 { font-size: 48px; color: #0D47A1; margin-bottom: 20px; font-weight: 700; }
+        .hero-section .tagline { font-size: 24px; color: #4A5568; margin-bottom: 40px; }
+
+        .ratings-container { display: flex; justify-content: center; gap: 40px; margin: 40px 0; flex-wrap: wrap; }
+        .rating-card { background: white; padding: 25px 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 4px solid #F59E0B; }
+        .rating-card .stars { font-size: 32px; color: #F59E0B; margin-bottom: 10px; }
+        .rating-card .rating-text { font-size: 24px; font-weight: 700; color: #1565C0; margin-bottom: 5px; }
+        .rating-card .platform { font-size: 14px; color: #718096; }
+
+        /* Info Section */
+        .info-section { max-width: 1200px; margin: 60px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+        .info-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-top: 4px solid #1565C0; }
+        .info-card h3 { font-size: 22px; color: #1565C0; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .info-card .icon { font-size: 28px; }
+        .info-card p { font-size: 16px; color: #4A5568; line-height: 1.8; margin-bottom: 10px; }
+        .info-card strong { color: #0D47A1; }
+
+        /* Contact Section */
+        .contact-section { background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%); color: white; padding: 60px 20px; text-align: center; }
+        .contact-container { max-width: 800px; margin: 0 auto; }
+        .contact-section h2 { font-size: 36px; margin-bottom: 30px; }
+        .contact-details { display: flex; flex-direction: column; gap: 20px; margin: 40px 0; }
+        .contact-item { font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .map-button {
+            background: #EF4444; color: white; padding: 18px 40px; border: none; border-radius: 8px;
+            font-size: 18px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 10px;
+            margin-top: 20px; transition: all 0.3s ease; text-decoration: none;
+        }
+        .map-button:hover { background: #DC2626; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4); }
+
+        .hours-card { background: rgba(255,255,255,0.1); padding: 25px; border-radius: 12px; margin-top: 30px; backdrop-filter: blur(10px); }
+        .hours-card h3 { font-size: 22px; margin-bottom: 20px; }
+        .hours-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .hours-item:last-child { border-bottom: none; }
+
+        /* Modal Overrides */
+        .login-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+        .login-modal.show { display: flex; justify-content: center; align-items: center; }
+        .login-modal-content { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 450px; width: 90%; position: relative; }
+        [data-dark] .login-modal-content { background: var(--surface); color: var(--text); }
+        
+        .close-modal { position: absolute; right: 20px; top: 20px; font-size: 28px; font-weight: bold; color: #718096; cursor: pointer; line-height: 1; border:none; background:none; }
+        .close-modal:hover { color: #4A5568; }
+
+        .login-type-selector { display:flex; gap:10px; margin-bottom:20px; }
+        .btn-type { flex:1; padding:10px; border:1px solid #DBEAFE; background:#F5F8FF; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:600; color:#4A5568; transition:all 0.3s; }
+        .btn-type.active { background:#1565C0; color:white; border-color:#1565C0; }
+        [data-dark] .btn-type { background:var(--surface2); color:var(--text2); border-color:var(--border); }
+        [data-dark] .btn-type.active { background:var(--primary); color:white; border-color:var(--primary); }
+
+        .form-group label { display:block; font-size:14px; font-weight:600; margin-bottom:6px; color:#4A5568; }
+        [data-dark] .form-group label { color:var(--text2); }
+        .form-group input { width:100%; padding:12px; border:1px solid #DBEAFE; border-radius:8px; margin-bottom:16px; font-family:'DM Sans',sans-serif; font-size:14px; }
+        [data-dark] .form-group input { background:var(--surface2); border-color:var(--border); color:var(--text); }
+
+        .btn-primary-custom { width:100%; padding:12px; border:none; border-radius:8px; background:#1565C0; color:white; font-weight:600; font-size:16px; cursor:pointer; transition:all 0.3s; font-family:'DM Sans',sans-serif; }
+        .btn-primary-custom:hover { background:#0D47A1; transform:translateY(-1px); }
+
+        @media (max-width: 768px) {
+            .hero-section h2 { font-size: 32px; }
+            .hero-section .tagline { font-size: 18px; }
+            .ratings-container { flex-direction: column; align-items: center; }
+            .header-container { flex-direction: column; gap: 15px; }
+            .logo-section h1 { font-size: 22px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+    <div id="app-loader">
+        <div class="logo-big">CSK<span style="color:#93C5FD">automobiles</span></div>
+        <div class="logo-sub">Tambaram · Chennai</div>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landingPage">
+        <!-- Header -->
+        <header class="landing-header">
+            <div class="header-container">
+                <div class="logo-section">
+                    <h1>CSK AUTOMOBILES</h1>
+                    <p>Trusted Auto Care Since 1995</p>
+                </div>
+                <button class="header-login-btn" onclick="showLoginModal()">Login / Register</button>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-container">
+                <h2>Welcome to CSK Automobiles</h2>
+                <p class="tagline">30+ Years of Excellence in Automotive Service</p>
+                <div class="ratings-container">
+                    <div class="rating-card">
+                        <div class="stars">⭐⭐⭐⭐⭐</div>
+                        <div class="rating-text">4.7/5</div>
+                        <div class="platform">Google Reviews</div>
+                    </div>
+                    <div class="rating-card">
+                        <div class="stars">⭐⭐⭐⭐⭐</div>
+                        <div class="rating-text">4.6/5</div>
+                        <div class="platform">JustDial</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Info Section -->
+        <section class="info-section">
+            <div class="info-card" style="text-align: center; padding: 40px 30px;">
+                <img src="https://res.cloudinary.com/dfol7xlwr/image/upload/v1762162523/WhatsApp_Image_2025-11-03_at_09.34.06_7483fe2f_x0pjml.jpg" 
+                     alt="C Siva Kumar" 
+                     style="width: 200px; height: 200px; border-radius: 50%; object-fit: cover; border: 6px solid #1565C0; margin: 0 auto 25px auto; display: block; box-shadow: 0 8px 20px rgba(21,101,192,0.3);">
+                <h3 style="margin-top: 15px; font-size: 24px; color: #1565C0; justify-content: center;">Owner & Founder</h3>
+                <p style="font-size: 20px; font-weight: 700; color: #0D47A1; margin: 15px 0;">C SIVA KUMAR</p>
+                <p style="font-size: 16px; line-height: 1.8;">With over 30 years of hands-on experience in automotive repair and maintenance, bringing expert care to every vehicle.</p>
+            </div>
+            <div class="info-card">
+                <h3><span class="icon">📞</span> Contact Us</h3>
+                <p><strong>Primary:</strong> <a href="tel:9444214412" style="color:inherit;text-decoration:none;">9444214412</a></p>
+                <p><strong>Secondary:</strong> <a href="tel:9659940179" style="color:inherit;text-decoration:none;">9659940179</a></p>
+                <p>Call us anytime during working hours for immediate assistance!</p>
+            </div>
+            <div class="info-card">
+                <h3><span class="icon">🏆</span> Experience</h3>
+                <p><strong>Established: 1995</strong></p>
+                <p><strong>30+ Years</strong> of trusted service</p>
+                <p>Serving Chennai with dedication and expertise for three decades.</p>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="contact-section">
+            <div class="contact-container">
+                <h2>Visit Us Today</h2>
+                <div class="contact-details">
+                    <div class="contact-item">
+                        <span class="icon">📍</span>
+                        <span>No 33, Nehru St, MGR Nagar, Chitlapakkam, Chennai - 600064</span>
+                    </div>
+                </div>
+                <a href="https://maps.app.goo.gl/Jf2ZSqnrZWyCQJGi9" target="_blank" class="map-button">
+                    <span>📍</span> Navigate to Our Workshop
+                </a>
+                <div class="hours-card">
+                    <h3>⏰ Working Hours</h3>
+                    <div class="hours-item">
+                        <span><strong>Monday - Saturday</strong></span>
+                        <span>9:00 AM - 9:00 PM</span>
+                    </div>
+                    <div class="hours-item">
+                        <span><strong>Sunday</strong></span>
+                        <span>9:00 AM - 1:00 PM</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="login-modal">
+        <div class="login-modal-content">
+            <button class="close-modal" onclick="closeLoginModal()">&times;</button>
+            <h1 style="color: var(--primary); margin-bottom: 8px; text-align: center;">Login</h1>
+            <p style="text-align: center; color: var(--text3); margin-bottom: 30px; font-size:14px;">Please select your login type</p>
+            
+            <div class="login-type-selector">
+                <button class="btn-type active" id="btn-type-customer" onclick="setLoginType('customer')">Customer</button>
+                <button class="btn-type" id="btn-type-worker" onclick="setLoginType('worker')">Worker / Admin</button>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number or Email</label>
+                <input type="text" id="login-id" placeholder="Enter phone or email">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-pass" placeholder="Enter your password">
+            </div>
+
+            <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+                <a href="#" onclick="openForgotPassword(currentLoginType)" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 600;">Forgot Password?</a>
+            </div>
+
+            <button onclick="handleFirebaseLogin()" class="btn-primary-custom" style="margin-bottom:15px;">Login</button>
+            
+            <div style="text-align:center; color:var(--text3); font-size:13px; margin:15px 0; position:relative;">
+                <span style="background:var(--surface); padding:0 10px; position:relative; z-index:1;">or</span>
+                <div style="position:absolute; top:50%; left:0; right:0; height:1px; background:var(--border); z-index:0;"></div>
+            </div>
+
+            <button class="btn btn-google btn-full" onclick="googleSignIn()" style="margin-bottom:20px; justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" style="margin-right:8px;"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Sign in with Google
+            </button>
+
+            <div style="text-align: center; font-size:14px; color:var(--text3);">
+                <p id="register-text">New customer? <a href="Customer_Registration.html" style="color:var(--primary); font-weight:600; text-decoration:none;">Register here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARED FORGOT PASSWORD MODAL (Mapped from shared.js logic) -->
+    <div id="forgot-pw-modal" class="login-modal">
+        <div class="login-modal-content">
+            <button class="close-modal" onclick="document.getElementById('forgot-pw-modal').classList.remove('show')">&times;</button>
+            <h1 style="color: var(--primary); margin-bottom: 20px;">Reset Password</h1>
+            
+            <div id="fp-step1">
+                <p style="color: var(--text3); margin-bottom: 20px; font-size: 14px;">Enter your registered email to receive an OTP</p>
+                <div class="form-group"><label>Registered Email</label><input type="email" id="fp-email" placeholder="Enter your email"></div>
+                <button class="btn-primary-custom" onclick="sendForgotOTP()">Send OTP</button>
+            </div>
+            
+            <div id="fp-step2" class="hidden">
+                <p style="color: var(--text3); margin-bottom: 16px; font-size: 14px;">OTP sent to your email. Enter it below:</p>
+                <div class="form-group"><label>Enter OTP</label><input type="text" id="fp-otp" placeholder="6-digit OTP" maxlength="6"></div>
+                <div class="form-group"><label>New Password</label><input type="password" id="fp-newpass" placeholder="Min 8 chars, include number"></div>
+                <div class="form-group"><label>Confirm Password</label><input type="password" id="fp-confirmpass" placeholder="Confirm password"></div>
+                <button class="btn-primary-custom" onclick="verifyOTPAndReset()">Reset Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load existing shared code -->
+    <script src="shared.js"></script>
+    <script>
+        let currentLoginType = 'customer';
+
+        window.onload = function() {
+            restoreDark();
+            // Auto-redirect if already logged in
+            const saved = JSON.parse(localStorage.getItem('csk_user') || 'null');
+            if (saved) {
+                if (saved.role === 'admin') { window.location.href = 'admin_portal.html'; return; }
+                if (saved.role === 'worker') { window.location.href = 'worker_portal.html'; return; }
+                if (saved.role === 'customer') { window.location.href = 'customer_portal.html'; return; }
+            }
+            setTimeout(() => hideLoader(), 800);
+        };
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.add('show');
+            document.getElementById('login-id').value = '';
+            document.getElementById('login-pass').value = '';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('show');
+        }
+
+        // We override the shared.js openForgotPassword to show it our way
+        function openForgotPassword(role) {
+            closeLoginModal();
+            fpRole = role; fpOTP = ''; fpDocId = '';
+            document.getElementById('fp-step1').classList.remove('hidden');
+            document.getElementById('fp-step2').classList.add('hidden');
+            document.getElementById('fp-email').value = '';
+            document.getElementById('forgot-pw-modal').classList.add('show');
+        }
+
+        function setLoginType(type) {
+            currentLoginType = type;
+            document.getElementById('btn-type-customer').classList.toggle('active', type === 'customer');
+            document.getElementById('btn-type-worker').classList.toggle('active', type === 'worker');
+            
+            const regText = document.getElementById('register-text');
+            if (type === 'customer') {
+                regText.innerHTML = 'New customer? <a href="Customer_Registration.html" style="color:var(--primary); font-weight:600; text-decoration:none;">Register here</a>';
+            } else {
+                regText.innerHTML = 'New worker? <a href="Worker_Registration.html" style="color:var(--primary); font-weight:600; text-decoration:none;">Register here</a>';
+            }
+        }
+
+        async function handleFirebaseLogin() {
+            const input = document.getElementById('login-id').value.trim();
+            const pass = document.getElementById('login-pass').value;
+            
+            if (!input) { toast('Enter phone or email', 'error'); return; }
+            if (!pass) { toast('Password is required', 'error'); return; }
+
+            // Admin bypass
+            if (currentLoginType === 'worker' && (input === ADMIN_EMAIL || input === ADMIN_PASSWORD) && pass === ADMIN_PASSWORD) {
+                localStorage.setItem('csk_role', 'admin');
+                localStorage.setItem('csk_user', JSON.stringify({ role: 'admin', id: 'admin', data: { name: 'Admin' } }));
+                window.location.href = 'admin_portal.html';
+                return;
+            }
+
+            try {
+                let doc, data, role;
+                const primaryCol = currentLoginType === 'worker' ? 'workers' : 'customers';
+                const secondaryCol = currentLoginType === 'worker' ? 'customers' : 'workers';
+
+                async function findValidDoc(col, field, val) {
+                    let res = await db.collection(col).where(field, '==', val).get();
+                    if (res.empty && field === 'email') {
+                        res = await db.collection(col).where(field, '==', val.toLowerCase()).get();
+                    }
+                    if (res.empty) return null;
+                    let docs = res.docs;
+                    // Prioritize approved account with matching password
+                    let match = docs.find(d => d.data().password === pass && d.data().status === 'Approved');
+                    if (!match) match = docs.find(d => d.data().password === pass);
+                    if (!match) match = docs.find(d => d.data().status === 'Approved');
+                    if (!match) match = docs[0];
+                    return match;
+                }
+
+                if (isPhone(input)) {
+                    doc = await findValidDoc(primaryCol, 'phone', input);
+                    if (doc) role = currentLoginType;
+                    if (!doc) {
+                        doc = await findValidDoc(secondaryCol, 'phone', input);
+                        if (doc) role = currentLoginType === 'worker' ? 'customer' : 'worker';
+                    }
+                } else if (isEmail(input)) {
+                    doc = await findValidDoc(primaryCol, 'email', input);
+                    if (doc) role = currentLoginType;
+                    if (!doc) {
+                        doc = await findValidDoc(secondaryCol, 'email', input);
+                        if (doc) role = currentLoginType === 'worker' ? 'customer' : 'worker';
+                    }
+                } else {
+                    doc = await findValidDoc('customers', 'userId', input.toUpperCase());
+                    if (doc) role = 'customer';
+                }
+
+                if (!doc) { toast('Account not found. Please check your login type and try again.', 'error'); return; }
+                
+                data = doc.data();
+                if (!role) role = currentLoginType;
+                
+                if (data.password !== pass) { toast('Incorrect password', 'error'); return; }
+                if (data.status === 'Pending') { toast('Your account is pending admin approval', 'error'); return; }
+                if (data.status === 'Rejected' || data.status === 'Removed') { toast('Your account is not active', 'error'); return; }
+                
+                localStorage.setItem('csk_role', role);
+                localStorage.setItem('csk_user', JSON.stringify({ role: role, id: doc.id, data: data }));
+                window.location.href = role === 'worker' ? 'worker_portal.html' : 'customer_portal.html';
+                
+            } catch (e) {
+                toast('Login error: ' + e.message, 'error');
+            }
+        }
+
+        async function googleSignIn() {
+            try {
+                const result = await auth.signInWithPopup(googleProvider);
+                const email = result.user.email;
+                
+                // Admin check
+                if (email === ADMIN_EMAIL) {
+                    localStorage.setItem('csk_role', 'admin');
+                    localStorage.setItem('csk_user', JSON.stringify({ role: 'admin', id: 'admin', data: { name: 'Admin' } }));
+                    window.location.href = 'admin_portal.html';
+                    return;
+                }
+
+                async function findValidGoogleDoc(col, mail) {
+                    let res = await db.collection(col).where('email', '==', mail).get();
+                    if (res.empty) res = await db.collection(col).where('email', '==', mail.toLowerCase()).get();
+                    if (res.empty) return null;
+                    let docs = res.docs;
+                    let match = docs.find(d => d.data().status === 'Approved');
+                    if (!match) match = docs[0];
+                    return match;
+                }
+                
+                // Check worker collection
+                let doc = await findValidGoogleDoc('workers', email);
+                if (doc) {
+                    if (doc.data().status === 'Approved') {
+                        localStorage.setItem('csk_role', 'worker');
+                        localStorage.setItem('csk_user', JSON.stringify({ role: 'worker', id: doc.id, data: doc.data() }));
+                        window.location.href = 'worker_portal.html';
+                        return;
+                    } else {
+                        toast('Your worker account is pending or inactive.', 'error'); return;
+                    }
+                }
+                
+                // Check customer collection
+                doc = await findValidGoogleDoc('customers', email);
+                if (doc) {
+                    if (doc.data().status === 'Approved') {
+                        localStorage.setItem('csk_role', 'customer');
+                        localStorage.setItem('csk_user', JSON.stringify({ role: 'customer', id: doc.id, data: doc.data() }));
+                        window.location.href = 'customer_portal.html';
+                        return;
+                    } else {
+                        toast('Your customer account is pending or inactive.', 'error'); return;
+                    }
+                }
+                
+                toast('No account linked to ' + email + '. Please register first.', 'error');
+            } catch (e) { toast('Google sign-in error: ' + e.message, 'error'); }
+        }
+
+        // We also want to override the forgot password success slightly to remove "show" class from our modal
+        const originalVerify = verifyOTPAndReset;
+        verifyOTPAndReset = async function() {
+            await originalVerify();
+            document.getElementById('forgot-pw-modal').classList.remove('show');
+        };
+
+    </script>
+</body>
+</html>

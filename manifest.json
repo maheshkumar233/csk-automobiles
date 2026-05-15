@@ -1,0 +1,25 @@
+{
+  "name": "CSK Automobiles - Workshop Management",
+  "short_name": "CSK Auto",
+  "description": "Premium auto service management system for CSK Automobiles, Tambaram Chennai",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1E40AF",
+  "theme_color": "#2563EB",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

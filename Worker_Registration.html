@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSK Automobiles — Worker Registration</title>
+<meta name="description" content="Register as a worker at CSK Automobiles workshop, Tambaram Chennai.">
+<link rel="icon" href="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="toast-container"></div>
+
+<div id="reg-success" class="success-overlay" style="display:none;">
+  <div class="success-card">
+    <div class="success-icon">🎉</div>
+    <h2>Thank You!</h2>
+    <p style="font-size:16px; color:var(--text); font-weight:600; margin-bottom:8px;">Your application has been submitted successfully!</p>
+    <p>Your registration will be reviewed by the admin. You will be redirected shortly.</p>
+    <div class="spinner" style="margin:20px auto 0; border-color:var(--border); border-top-color:var(--primary);"></div>
+  </div>
+</div>
+
+<div style="min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="max-width:500px;width:100%;">
+    <a href="index.html" class="btn btn-secondary btn-sm mb-16" style="text-decoration:none;">← Back to Login</a>
+    <div class="card">
+      <div style="text-align:center; margin-bottom:20px;">
+        <img src="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" alt="CSK Logo" style="width:60px;height:60px;border-radius:12px;margin-bottom:10px;">
+        <h2 style="font-family:Syne,sans-serif;font-weight:700;">Worker Registration</h2>
+        <p class="text-sm text-muted mt-8">Join our team of professionals</p>
+      </div>
+      <div class="form-group"><label>Full Name</label><input type="text" class="form-control" id="wr-name" placeholder="Enter full name"><div class="form-error" id="wr-name-err">Name is required</div></div>
+      <div class="form-row">
+        <div class="form-group"><label>Age</label><input type="number" class="form-control" id="wr-age" placeholder="Age" min="18" max="70"><div class="form-error" id="wr-age-err">Valid age required</div></div>
+        <div class="form-group"><label>Date of Birth</label><input type="date" class="form-control" id="wr-dob"><div class="form-error" id="wr-dob-err">DOB required</div></div>
+      </div>
+      <div class="form-group"><label>Phone Number</label><input type="tel" class="form-control" id="wr-phone" placeholder="10-digit phone" maxlength="10"><div class="form-error" id="wr-phone-err">Valid 10-digit phone required</div></div>
+      <div class="form-group"><label>Email (optional — for Google Sign-In)</label><input type="email" class="form-control" id="wr-email" placeholder="email@example.com"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Password</label><input type="password" class="form-control" id="wr-pass" placeholder="Min 8 chars + number"><div class="form-error" id="wr-pass-err">Min 8 chars with a number</div></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" class="form-control" id="wr-cpass" placeholder="Confirm password"><div class="form-error" id="wr-cpass-err">Passwords do not match</div></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitWorkerReg()" id="wr-submit-btn">Submit Registration</button>
+      <p class="text-sm text-muted mt-8" style="text-align:center;">Your registration will be reviewed by the admin</p>
+    </div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+window.onload = function() { restoreDark(); };
+
+async function submitWorkerReg() {
+  const name = getVal('wr-name'), age = getVal('wr-age'), dob = getVal('wr-dob');
+  const phone = getVal('wr-phone'), email = getVal('wr-email'), pass = getVal('wr-pass'), cpass = getVal('wr-cpass');
+  let ok = true;
+  if (!name) { setErr('wr-name-err', true); ok = false; } else clearErr('wr-name-err');
+  if (!age || age < 18) { setErr('wr-age-err', true); ok = false; } else clearErr('wr-age-err');
+  if (!dob) { setErr('wr-dob-err', true); ok = false; } else clearErr('wr-dob-err');
+  if (!isPhone(phone)) { setErr('wr-phone-err', true); ok = false; } else clearErr('wr-phone-err');
+  if (!validPassword(pass)) { setErr('wr-pass-err', true); ok = false; } else clearErr('wr-pass-err');
+  if (pass !== cpass) { setErr('wr-cpass-err', true); ok = false; } else clearErr('wr-cpass-err');
+  if (!ok) return;
+  document.getElementById('wr-submit-btn').disabled = true;
+  document.getElementById('wr-submit-btn').textContent = 'Submitting...';
+  try {
+    const existing = await db.collection('workers').where('phone', '==', phone).get();
+    if (!existing.empty) { toast('Phone number already registered', 'error'); document.getElementById('wr-submit-btn').disabled = false; document.getElementById('wr-submit-btn').textContent = 'Submit Registration'; return; }
+    await db.collection('workers').add({ name, age: Number(age), dob, phone, email: email || '', password: pass, status: 'Pending', createdAt: new Date().toISOString() });
+    document.getElementById('reg-success').style.display = 'flex';
+    setTimeout(() => window.location.href = 'index.html', 3000);
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+    document.getElementById('wr-submit-btn').disabled = false;
+    document.getElementById('wr-submit-btn').textContent = 'Submit Registration';
+  }
+}
+</script>
+</body>
+</html>

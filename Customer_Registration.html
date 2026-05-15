@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSK Automobiles — Customer Registration</title>
+<meta name="description" content="Register as a customer at CSK Automobiles, Tambaram Chennai. Get your vehicle serviced by trusted professionals.">
+<link rel="icon" href="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+<div id="toast-container"></div>
+
+<!-- Success Overlay (hidden by default) -->
+<div id="reg-success" class="success-overlay" style="display:none;">
+  <div class="success-card">
+    <div class="success-icon">🎉</div>
+    <h2>Thank You!</h2>
+    <p style="font-size:16px; color:var(--text); font-weight:600; margin-bottom:8px;">Your application has been submitted successfully!</p>
+    <p>Your account will be activated after admin approval. You will be redirected to the home page shortly.</p>
+    <div class="spinner" style="margin:20px auto 0; border-color:var(--border); border-top-color:var(--primary);"></div>
+  </div>
+</div>
+
+<div style="min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="max-width:580px;width:100%;">
+    <a href="index.html" class="btn btn-secondary btn-sm mb-16" style="text-decoration:none;">← Back to Login</a>
+    <div class="card">
+      <div style="text-align:center; margin-bottom:20px;">
+        <img src="https://res.cloudinary.com/dfol7xlwr/image/upload/v1778825358/generated-image_nm6t7t.png" alt="CSK Logo" style="width:60px;height:60px;border-radius:12px;margin-bottom:10px;">
+        <h2 style="font-family:Syne,sans-serif;font-weight:700;">Customer Registration</h2>
+        <p class="text-sm text-muted mt-8">Fill in your details to create an account</p>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Full Name</label><input type="text" class="form-control" id="cr-name" placeholder="Full name"><div class="form-error" id="cr-name-err">Name required</div></div>
+        <div class="form-group"><label>Mobile Number</label><input type="tel" class="form-control" id="cr-phone" placeholder="10-digit mobile" maxlength="10"><div class="form-error" id="cr-phone-err">Valid 10-digit number required</div></div>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <div style="display:flex;gap:8px;">
+          <input type="email" class="form-control" id="cr-email" placeholder="email@example.com" style="flex:1;">
+          <button class="btn btn-secondary btn-sm" id="cr-send-otp-btn" onclick="sendRegOTP()" type="button">Verify</button>
+        </div>
+        <div class="form-error" id="cr-email-err">Valid email required</div>
+        <div id="cr-otp-section" class="hidden" style="margin-top:8px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" class="form-control" id="cr-otp" placeholder="Enter 6-digit OTP" maxlength="6" style="flex:1;max-width:200px;">
+            <button class="btn btn-primary btn-sm" onclick="verifyRegOTP()" type="button">Confirm</button>
+          </div>
+          <div id="cr-otp-status" style="font-size:12px;margin-top:4px;"></div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Vehicle Type</label><select class="form-control" id="cr-vtype"><option value="">Select type</option><option>Car</option><option>Bike</option><option>SUV</option><option>Truck</option></select><div class="form-error" id="cr-vtype-err">Vehicle type required</div></div>
+        <div class="form-group"><label>Vehicle Manufacturer</label><select class="form-control" id="cr-vmake"><option value="">Select make</option><option>Maruti Suzuki</option><option>Hyundai</option><option>Honda</option><option>Toyota</option><option>Tata</option><option>Mahindra</option><option>Kia</option><option>Volkswagen</option><option>Bajaj</option><option>TVS</option><option>Hero</option><option>Royal Enfield</option><option>Yamaha</option><option>Suzuki</option><option>Ford</option><option>Renault</option><option>Nissan</option><option>Skoda</option><option>Other</option></select><div class="form-error" id="cr-vmake-err">Make required</div></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Vehicle Model</label><input type="text" class="form-control" id="cr-vmodel" placeholder="e.g. Swift, City, Activa"><div class="form-error" id="cr-vmodel-err">Model required</div></div>
+        <div class="form-group"><label>Year of Manufacture</label><select class="form-control" id="cr-vyear"></select><div class="form-error" id="cr-vyear-err">Year required</div></div>
+      </div>
+      <div class="form-group"><label>Vehicle Registration Number</label><input type="text" class="form-control" id="cr-vreg" placeholder="e.g. TN 22 AB 1234" style="text-transform:uppercase;"><div class="form-error" id="cr-vreg-err">Registration number required</div></div>
+      <div class="form-row">
+        <div class="form-group"><label>Password</label><input type="password" class="form-control" id="cr-pass" placeholder="Min 8 chars + number"><div class="form-error" id="cr-pass-err">Min 8 chars with a number</div></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" class="form-control" id="cr-cpass" placeholder="Confirm password"><div class="form-error" id="cr-cpass-err">Passwords don't match</div></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitCustomerReg()" id="cr-submit-btn">Submit Registration</button>
+      <p class="text-sm text-muted mt-8" style="text-align:center;">Your account will be activated after admin approval</p>
+    </div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script>
+let regOTP = '', regEmailVerified = false, otpCooldown = false, otpTimer = null;
+
+window.onload = function() {
+  restoreDark();
+  populateYearDropdowns(['cr-vyear']);
+};
+
+async function sendRegOTP() {
+  if (otpCooldown) { toast('Please wait before requesting another OTP', 'info'); return; }
+  const email = getVal('cr-email');
+  if (!isEmail(email)) { toast('Enter a valid email first', 'error'); return; }
+  regOTP = String(Math.floor(100000 + Math.random() * 900000));
+  regEmailVerified = false;
+  const btn = document.getElementById('cr-send-otp-btn');
+  btn.disabled = true;
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, { to_email: email, to_name: getVal('cr-name') || 'New Customer', user_email: email, otp_code: regOTP, user_name: getVal('cr-name') || 'New Customer', user_id: 'Registration Verification' });
+    toast('OTP sent to ' + email, 'success');
+    document.getElementById('cr-otp-section').classList.remove('hidden');
+    document.getElementById('cr-otp-status').textContent = 'Check your email for the 6-digit OTP';
+    document.getElementById('cr-otp-status').style.color = 'var(--text3)';
+    // Start 2-min cooldown
+    otpCooldown = true;
+    let secs = 120;
+    btn.textContent = `Wait ${secs}s`;
+    otpTimer = setInterval(() => {
+      secs--;
+      btn.textContent = `Wait ${secs}s`;
+      if (secs <= 0) {
+        clearInterval(otpTimer);
+        otpCooldown = false;
+        btn.textContent = 'Resend';
+        btn.disabled = false;
+      }
+    }, 1000);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Verify';
+    toast('Error sending OTP: ' + (e.text || e.message || JSON.stringify(e)), 'error');
+  }
+}
+
+function verifyRegOTP() {
+  if (getVal('cr-otp') === regOTP && regOTP !== '') {
+    regEmailVerified = true;
+    document.getElementById('cr-otp-status').textContent = '✅ Email verified!';
+    document.getElementById('cr-otp-status').style.color = 'var(--green)';
+    const btn = document.getElementById('cr-send-otp-btn');
+    if (otpTimer) clearInterval(otpTimer);
+    btn.textContent = '✓ Verified';
+    btn.disabled = true;
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--green)';
+    document.getElementById('cr-email').readOnly = true;
+    toast('Email verified!', 'success');
+  } else {
+    document.getElementById('cr-otp-status').textContent = '❌ Incorrect OTP. Try again.';
+    document.getElementById('cr-otp-status').style.color = 'var(--red)';
+  }
+}
+
+async function submitCustomerReg() {
+  const name = getVal('cr-name'), phone = getVal('cr-phone'), email = getVal('cr-email');
+  const vtype = getVal('cr-vtype'), vmake = getVal('cr-vmake'), vmodel = getVal('cr-vmodel');
+  const vyear = getVal('cr-vyear'), vreg = getVal('cr-vreg'), pass = getVal('cr-pass'), cpass = getVal('cr-cpass');
+  let ok = true;
+  if (!name) { setErr('cr-name-err', true); ok = false; } else clearErr('cr-name-err');
+  if (!isPhone(phone)) { setErr('cr-phone-err', true); ok = false; } else clearErr('cr-phone-err');
+  if (!isEmail(email)) { setErr('cr-email-err', true); ok = false; } else clearErr('cr-email-err');
+  if (!regEmailVerified) { toast('Please verify your email with OTP first', 'error'); ok = false; }
+  if (!vtype) { setErr('cr-vtype-err', true); ok = false; } else clearErr('cr-vtype-err');
+  if (!vmake) { setErr('cr-vmake-err', true); ok = false; } else clearErr('cr-vmake-err');
+  if (!vmodel) { setErr('cr-vmodel-err', true); ok = false; } else clearErr('cr-vmodel-err');
+  if (!vyear) { setErr('cr-vyear-err', true); ok = false; } else clearErr('cr-vyear-err');
+  if (!vreg) { setErr('cr-vreg-err', true); ok = false; } else clearErr('cr-vreg-err');
+  if (!validPassword(pass)) { setErr('cr-pass-err', true); ok = false; } else clearErr('cr-pass-err');
+  if (pass !== cpass) { setErr('cr-cpass-err', true); ok = false; } else clearErr('cr-cpass-err');
+  if (!ok) return;
+  document.getElementById('cr-submit-btn').disabled = true;
+  document.getElementById('cr-submit-btn').textContent = 'Submitting...';
+  try {
+    const ex = await db.collection('customers').where('phone', '==', phone).get();
+    if (!ex.empty) { toast('Phone already registered', 'error'); document.getElementById('cr-submit-btn').disabled = false; document.getElementById('cr-submit-btn').textContent = 'Submit Registration'; return; }
+    await db.collection('customers').add({
+      name, phone, email, vehicleType: vtype, vehicleMake: vmake, vehicleModel: vmodel,
+      vehicleYear: vyear, vehicleReg: vreg.toUpperCase(), password: pass,
+      status: 'Pending', userId: '', emailVerified: true, createdAt: new Date().toISOString()
+    });
+    document.getElementById('reg-success').style.display = 'flex';
+    setTimeout(() => window.location.href = 'index.html', 3000);
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+    document.getElementById('cr-submit-btn').disabled = false;
+    document.getElementById('cr-submit-btn').textContent = 'Submit Registration';
+  }
+}
+</script>
+</body>
+</html>
